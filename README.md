@@ -3,37 +3,39 @@ author: Remco Bouckaert
 level: Intermediate
 title: Model selection
 subtitle: Model selection with nested sampling
-beastversion: 2.5.2
-nsversion: 1.0.4
+beastversion: 2.7.x
+tracerversion: 1.7.2
+nsversion: 1.2.2
 ---
 
 
 # Background
 
-BEAST provides a bewildering number of models. Bayesians have two techniques to deal with this problem: model averaging and model selection. With **model averaging**, the MCMC algorithms jumps between the different models, and models more appropriate for the data will be sampled more often than unsuitable models (see for example the [substitution model averaging tutorial](https://taming-the-beast.org/tutorials/Substitution-model-averaging/)). **Model selection** on the other hand just picks one model and uses only that model during the MCMC run. This tutorial gives some guidelines on how to select the model that is most appropriate for your analysis. 
+BEAST provides a bewildering number of models. Bayesians have two techniques to deal with this problem: model averaging and model selection. With **model averaging**, the MCMC algorithm jumps between different models, and models more appropriate for the data will be sampled more often than unsuitable models (see for example the [substitution model averaging tutorial](https://taming-the-beast.org/tutorials/Substitution-model-averaging/)). **Model selection** on the other hand just picks one model and uses only that model during the MCMC run. This tutorial gives some guidelines on how to select the model that is most appropriate for your analysis. 
 
-Bayesian model selection is based on estimating the marginal likelihood: the term forming the denominator in Bayes formula. This is generally a computationally intensive task and  there are several ways to estimate them. Here, we concentrate on nested sampling as a way to estimate the marginal likelihood as well as the uncertainty in that estimate.
+Bayesian model selection is based on estimating the marginal likelihood: the term forming the denominator in Bayes' formula. This is generally a computationally intensive task and  there are several ways to estimate them. Here, we concentrate on nested sampling as a way to estimate the marginal likelihood as well as the uncertainty in that estimate.
 
-Say, we have two models, M1 and M2, and estimates of the (log) marginal likelihood, ML1 and ML2, then we can calculate the Bayes factor, which is the fraction BF=ML1/ML2 (or in log space, the difference log(BF) = log(ML1)-log(ML2)). If BF is larger than 1, model M1 is favoured, and otherwise M2 is favoured. How much it is favoured can be found in the following table {% cite kass1995bayes --file NS-tutorial/master-refs %}:
+Say, we have two models, $M_1$ and $M_2$, and estimates of their (log) marginal likelihoods, $Z_1$ and $Z_2$. We can calculate the Bayes' factor (BF), which is the fraction $BF = Z_1/Z_2$ (or the difference $\log(BF) = \log(Z_1) - \log(Z_2)$ in log space). Typically, if $\log(BF)$ is greater than 1, $M_1$ is favoured, otherwise $M_1$ and $M2$ are hardly distinguishable or $M_2$ is favoured. How much $M_1$ is favoured over $M_2$ can be found in the following table {% cite kass1995bayes --file NS-tutorial/master-refs %}:
 
 <figure>
 	<a name="fig:bfs"></a>
 	<img style="width:80.0%;" src="figures/BFs.png" alt="">
-	<figcaption>Figure 1: Bayes factor support.</figcaption>
+	<figcaption>Figure 1: Bayes' factor support in favour of \(M_1\) against \(M_2\).</figcaption>
 </figure>
-<br>
 
-Note that sometimes a factor 2 is used for multiplying BFs, so when comparing BFs from different publications, be aware which definition was used.
+Note that BFs are sometimes multiplied by a factor of 2, so beware of which definition was used when comparing BFs from different publications.
 
 
-**Nested sampling** is an algorithm that works as follows:
+**Nested sampling** (NS) is an algorithm that works as follows:
 
-* randomly sample `N` points from the prior
-* while not converged
-	* pick the point with the lowest likelihood L<sub>min</sub>, and save to log file
-	* replace the point with a new point randomly sampled from the prior using an MCMC chain of `subChainLength` samples __under the condition that the likelihood is at least L<sub>min</sub>__
+* Randomly sample `N` points (also called particles) from the prior distribution
+* While (marginal) likelihood estimates have not converged
+	* Pick the point with the lowest likelihood $L_{min}$ and save it to the log file
+	* Replace the point with a new one sampled from the prior via an MCMC chain of `subChainLength` steps, **under the condition that the new likelihood is at least $L_{min}$**
 
-So, the main parameters of the algorithm are the number of particles `N` and the `subChainLength`. `N` can be determined by starting with `N=1` and from the information of that run a target standard deviation can be determined, which gives us a formula to determine `N` (as we will see later in the tutorial). The `subChainLength` determines how independent the replacement point is from the point that was saved, and is the only parameter that needs to be determined by trial and error -- see [FAQ](#nested-sampling-faq) for details.
+The main parameters of the NS algorithm are the number of particles (`N`) and the length of the MCMC chain to sample a replacement particle (`subChainLength`). To determine `N`, we first start the NS analysis with `N=1`. Based on the results of that analysis, we can determine a target standard deviation for marginal likelihood estimates and calculate the required `N` value using the estimated information measure `H` and a given formula (more details will follow later in the tutorail).
+
+The `subChainLength` determines how independent the replacement point is from the $L_{min}$ point that was saved and is a parameter that needs to be determined by trial and error (see [FAQ](#nested-sampling-faq) for details).
 
 
 ----
@@ -42,7 +44,7 @@ So, the main parameters of the algorithm are the number of particles `N` and the
 
 ### BEAST2 - Bayesian Evolutionary Analysis Sampling Trees 2
 
-BEAST2 is a free software package for Bayesian evolutionary analysis of molecular sequences using MCMC and strictly oriented toward inference using rooted, time-measured phylogenetic trees {% cite Bouckaert2014 --file NS-tutorial/master-refs %}, {% cite bouckaert2018beast --file NS-tutorial/master-refs %}. This tutorial uses the BEAST2 version 2.5.2.
+BEAST2 is a free software package for Bayesian evolutionary analysis of molecular sequences using MCMC and strictly oriented toward inference using rooted, time-measured phylogenetic trees {% cite Bouckaert2014 --file NS-tutorial/master-refs %}, {% cite bouckaert2018beast --file NS-tutorial/master-refs %}. This tutorial uses the BEAST2 version 2.7.x.
 
 ### BEAUti2 - Bayesian Evolutionary Analysis Utility
 
@@ -52,85 +54,94 @@ Both BEAST2 and BEAUti2 are Java programs, which means that the exact same code 
 
 ### Tracer
 
-[Tracer](http://tree.bio.ed.ac.uk/software/tracer) is used to summarise the posterior estimates of the various parameters sampled by the Markov Chain. This program can be used for visual inspection and to assess convergence. It helps to quickly view median estimates and 95% highest posterior density intervals of the parameters, and calculates the effective sample sizes (ESS) of parameters. It can also be used to investigate potential parameter correlations. We will be using Tracer v1.7.0.
+[Tracer](http://tree.bio.ed.ac.uk/software/tracer) is used to summarise the posterior estimates of the various parameters sampled by the Markov Chain. This program can be used for visual inspection and to assess convergence. It helps to quickly view median estimates and 95% highest posterior density intervals of the parameters, and calculates the effective sample sizes (ESS) of parameters. It can also be used to investigate potential parameter correlations. We will be using Tracer v1.7.2.
 
 ----
 
 # Practical: Selecting a clock model
 
-We will analyse a set of hepatitis B virus (HBV) sequences sampled through time and concentrate on selecting a clock model. 
-The most popular clock models are the strict clock model and uncorrelated relaxed clock with log normal distributed rates (UCLN) model.
+In this tutorial, we will analyse a dataset of hepatitis B virus (HBV) sequences sampled through time and concentrate on selecting a clock model. 
+We will select between two popular clock models, the strict clock and the uncorrelated relaxed clock with log-normal-distributed rates (UCLN).
 
-## Setting up the Strict clock analysis
+## Setting up the strict clock analysis
 
-First thing to do is set up the two analyses in BEAUti, and run them in order to make sure there are differences in the analyses. The alignment can be downloaded here: [https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/data/HBV.nex](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/data/HBV.nex). We will set up a model with tip dates, HKY substitution model, Coalescent prior with constant population, and a fixed clock rate. 
+First thing to do is set up the two analyses in BEAUti, and run them in order to make sure there are differences in the analyses. The alignment can be downloaded [here](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/data/HBV.nex). We will set up a model with tip dates, the HKY substitution model, the coalescent tree prior with constant population size, and a fixed clock rate. 
 
-> **In BEAUti:**
+> __In BEAUti:__
 > 
-> * Start a new analysis using the Standard template.
-> * Import [HBV.nex](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/data/HBV.nex) using menu `File > Import alignment`.
-> * In the tip-dates panel, select `tip dates`, click `Auto configure` and select the `split on character` option, taking group 2 (see [Fig 2](#fig:auto-config)).
-> * In the site model panel, select `HKY` as substitution model and leave the rest as is.
-> * In the clock model panel, set the clock rate to 2e-5. Though usually, we want to estimate the rate, to speed things up for the tutorial, we fix the clock rate at that number as follows:
->     * Uncheck menu `Mode > Automatic set clock rate`. Now the estimate entry should not be grayed out any more.
+> * Start a new analysis using the `File > Template > Standard` template.
+> * Import [HBV.nex](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/data/HBV.nex) using `File > Import alignment`.
+> * In the `Tip Dates` panel, select `Use tip dates`, click `Auto-configure`, select `split on character` and take group 2 (see [Fig 2](#fig:auto-config)).
+> * In the `Site Model` panel, select `HKY` as the substitution model (`Subst Model`) and leave the rest as is.
+> * In the `Clock Model` panel, set the `Mean clock rate` to `2E-5`. Usually we would want to estimate the clock rate, but to speed up the analysis for the tutorial we will fix the clock rate to `2E-5` as follows:
+>     * Uncheck `Mode > Automatic set clock rate`. Now the `estimate` entry should not be grayed out anymore (see [Fig 3](#fig:uncheck-auto-set)).
 >     * Uncheck the `estimate` box next to the clock rate entry.
-> * In the priors panel, select `Coalescent Constant Population` as tree prior.
-> * Also in the priors panel, change to `popSize` prior to `Gamma` with alpha = 0.01, beta = 100 ([Fig 3](#fig:priors)).
-> * In the MCMC panel, change the `Chain Length` to 1 million.
-> * You can rename the file for trace log and tree file to include "Strict" to distinguish them for the relaxed clock ones.
-> * Save the file as `HBVStrict.xml`. __Do not close BEAUti just yet!__
+> * In the `Priors` panel, select `Coalescent Constant Population` as the tree prior. Next, change the prior on the population size parameter `popSize` to a `Gamma` distribution with `alpha = 0.01` and `beta = 100` ([Fig 4](#fig:priors)).
+> * In the `MCMC` panel, change the `Chain Length` to 1 million (`1E6`). You can also rename the output files for `tracelog` and `treelog` to include "Strict" to distinguish them from the relaxed clock analysis.
+> * Save the file as `HBVStrict.xml`, and __do not close BEAUti just yet!__
 > * Run the analysis with BEAST.
 
 >
-> **Do you have a clock rate prior in the priors panel?** If so, the clock rate is estimated, and you should revisit the part where the clock is set up!
+> __Note: Do you have a clock rate prior in the `Priors` panel?__ If so, the clock rate is being estimated, and you should revisit the `Clock Model` panel where the clock is set up!
 >
 
 
 <figure>
 	<a name="fig:auto-config"></a>
 	<img style="width:80.0%;" src="figures/BEAUti-configure-tip-dates.png" alt="">
-	<figcaption>Figure 2: Configuring tip dates in BEAUti</figcaption>
+	<figcaption>Figure 2: Configuring tip dates in BEAUti.</figcaption>
+</figure>
+<br>
+
+<figure>
+	<a name="fig:uncheck-auto-set"></a>
+	<img style="width:80.0%;" src="figures/BEAUti-uncheck-auto-set.png" alt="">
+	<figcaption>Figure 3: Unchecking "Automatic set clock rate" in BEAUti.</figcaption>
 </figure>
 <br>
 
 <figure>
 	<a name="fig:priors"></a>
 	<img style="width:80.0%;" src="figures/BEAUti-priors.png" alt="">
-	<figcaption>Figure 3: Priors panel for strict clock analysis in BEAUti</figcaption>
+	<figcaption>Figure 4: Priors panel for strict clock analysis in BEAUti.</figcaption>
 </figure>
 <br>
 
 ## Setting up the relaxed clock analysis
 
-> While you are waiting for BEAST to finish, it is time to set up the relaxed clock analysis. This is now straightforward if BEAUti is still open (if BEAUti was closed, open BEAUti, and load the file `HBVStrict.xml` through the menu `File > Load`):
+> __While you are waiting for the strict clock analysis to finish, you can set up the relaxed clock analysis. This is now straightforward if BEAUti is still open (if BEAUti was closed, open BEAUti and load the file `HBVStrict.xml` by `File > Load`):__
 > 
-> * In the clock model panel, change `Strict clock` to `Relaxed Clock Log Normal`.
-> * Set the clock rate to 2e-5, and uncheck the `estimate` box.
-> * In the MCMC panel, replace `Strict` in the file names for trace and tree log to `UCLN`.
-> * Save file as `HBVUCLN.xml` **Do not click the `File > Save` menu, but `File > Save as`, otherwise the strict clock XML file will be overwritten**
-> * Run the analysis in BEAST
+> * In the `Clock Model` panel, change `Strict clock` to `Relaxed Clock Log Normal`. Next, set the `Mean clock rate` to `2E-5`, and uncheck the `estimate` box.
+> * In the `MCMC` panel, replace `Strict` in the file names for `tracelog` and `treelog` to `UCLN`.
+> * Save the file as `HBVUCLN.xml`. __Note: Do not use `File > Save`; instead, use `File > Save as`, otherwise the strict clock XML file will be overwritten__.
+> * Run the analysis in BEAST.
 
-Once the analyses have run, open the log file in Tracer and compare estimates and see whether the analyses substantially differ. You can also compare the trees in DensiTree.
+Once both analyses have completed, open the log files in Tracer and compare parameter estimates to see whether the two analyses differ substantially. You may also compare the trees in DensiTree.
 
-> Are there any statistics that are very different?
-> Do tree heights differ substantially? 
-> Which analysis is preferable and why? 
+> * Are there any parameters that are very different?
+> * Do tree heights differ substantially? 
+> * Which analysis is preferable and why? 
 <!-- depends on the question you want to answer: if tree height is of interest, strict clock is preferred, since it reduces the uncertainty. If kappa is of interest, things are not that different -->
 
-If there are no substantial differences between the analysis for the question you are interested in, you do not have to commit to one model or another, and you can claim that the results are robust under different models. However, if there are significant differences, you may want to do a formal test to see which model is preferred over other models. In a Bayesian context, in practice this comes down to estimating the marginal likelihood, and calculating Bayes factors: the ratios of marginal likelihoods. Nested sampling {% cite russel2018model --file NS-tutorial/master-refs %} is one way to estimate marginal likelihoods. 
+If there are no substantial differences between the analyses for the question you are interested in, you do not have to commit to one model or another, and you can claim that the results are robust under different models.
 
-## Installing the NS Package
+However, if there are significant differences, you may want to perform a formal test to see which model is preferred over other models (in other words, which model is a better fit to the given data). In a Bayesian context, in practice this comes down to estimating __marginal likelihoods__, and calculating __Bayes' factors__: the ratios of marginal likelihoods. Nested sampling {% cite russel2018model --file NS-tutorial/master-refs %} is one way to estimate marginal likelihoods. 
 
-To use nested sampling, first have to install the NS (version {{ page.nsversion }} or above) package.
+## Installing the NS package
 
-> Open BEAUti and navigate to **File > Manage Packages**. Select NS and then click **Install/Upgrade** ([Fig 4](#fig:install)). Then **_restart BEAUti_** to load the package.
->  
+To use nested sampling, we first have to install the NS (version {{ page.nsversion}}) package:
+
+> __In BEAUti:__
+> 
+> * Open the Package Manager by `File > Manage Packages`.
+> * Select NS and click `Install/Upgrade` ([Fig 5](#fig:install)).
+> * **_Restart BEAUti_** to load the NS package.
 
 
 <figure>
 	<a id="fig:install"></a>
 	<img style="width:80.0%;" src="figures/install_NS.png" alt="">
-	<figcaption>Figure 4: Installing NS in the Manage Packages window in BEAUti</figcaption>
+	<figcaption>Figure 5: Installing NS in the Package Manager window in BEAUti.</figcaption>
 </figure>
 <br>
 
@@ -139,138 +150,174 @@ To use nested sampling, first have to install the NS (version {{ page.nsversion 
 
 You can convert an MCMC analysis to an NS analysis using the `MCMC2NS` tool that comes with the NS package. 
 
-> * launch the applauncher via the `File > Launch apps` menu in BEAUti
-> * in the dialog that pops up, select the `MCMC to NS converter` app, and click `Launch`
-> * select the XML file with strict clock analysis, set `HBVStrict-NS.xml` as output file in the same directory.
-> * change settings as in the figure below
-> * click `OK`, and the file with the nested sampling analysis will be created
-> * repeat the process for the relaxed clock analysis
+> __In BEAUti:__
+> 
+> * Open the Package Application Launcher via the `File > Launch Apps` menu. 
+> * In the dialog that pops up, select the `MCMC to NS converter (NS)` app and click `Launch`.
+> * Select the XML file for the strict clock analysis (`HBVStrict.xml`), set the output file as `HBVStrict-NS.xml` in the same directory.
+> * Change settings as shown in the [Figure 6](#fig:MCMC2NS) below.
+> * Click `OK`, and `HBVStrict-NS.xml` should be created.
+> * Repeat the steps above for the relaxed clock analysis (`HBVUCLN.xml`).
+
 
 <figure>
-	<a name="fig:priors"></a>
+	<a name="fig:MCMC2NS"></a>
 	<img style="width:80.0%;" src="figures/MCMC2NS.png" alt="">
-	<figcaption>Figure 4: converting an MCMC analysis to an NS analysis using the applauncher</figcaption>
+	<figcaption>Figure 6: Converting an MCMC analysis to an NS analysis using the MCMC to NS converter</figcaption>
 </figure>
 <br>
 
-Alternatively, you can do this in a text editor as follows:
+Alternatively, you can do the MCMC-to-NS conversion in a text editor as follows:
 
-> * copy the file `HBVStrict.xml` to `HBVStric-NS.xml` and 
-> * copy `HBVUCLN.xml` to `HBVUCLN-NS.xml`
-> * start a text editor and in both copied files, change
+> * Make a copy of the file `HBVStrict.xml`/`HBVUCLN.xml` as `HBVStric-NS.xml`/`HBVUCLN-NS.xml`.
+> * Start a text editor and in both copied `*NS.xml` files, change
 > 
 > ```xml
 > <run id="mcmc" spec="MCMC" chainLength="1000000">
 > ```
-> 
 > to
-> 
 > ```xml
-> <run id="mcmc" spec="beast.gss.NS" chainLength="20000" particleCount="1" subChainLength="5000">
+> <run id="mcmc" spec="nestedsampling.gss.NS" chainLength="1000000" particleCount="1" subChainLength="5000">
 > ```
 > 
-> * Here the `particleCount` represents the number of active points used in nested sampling: the more points used, the more accurate the estimate, but the longer the analysis takes. The `subChainLength` is the number of MCMC samples taken to get a new point that is independent (enough) from the point that is saved. Longer lengths mean longer runs, but also more independent samples. In practice, running with different `subChainLength` is necessary to find out which length is most suitable (see [FAQ](#nested-sampling-faq)).
-> * change the file names for the trace and tree log to include `NS` (searching for `fileName=` will get you there fastest).
-> * save the files, and run with BEAST.
+> * Here the `particleCount` represents the number of active points (`N`) used in nested sampling: the more points used, the more accurate the marginal likelihood estimates, but the longer the analysis takes.
+> * The `subChainLength` is the number of MCMC steps taken to get a new point that is independent (enough) from the point that was saved. Longer lengths mean longer runs, but also more independent samples. In practice, running with different `subChainLength` is necessary to find out which length is most suitable (see [FAQ](#nested-sampling-faq)).
+> * Change the file names for the trace and tree log to include `NS` (searching for `fileName=` will get you there fastest).
+> * Save the files, and run with BEAST.
 
 
-The end of the BEAST run for nested sampling with the strict clock should look something like this:
+Once the NS analyses have completed, you should see something like this at the end of the BEAST output for the strict clock NS analysis:
 
 ```
-Total calculation time: 34.146 seconds
-End likelihood: -202.93224422946253
+Total calculation time: 14.983 seconds
+End likelihood: -198.17149973585296
 Producing posterior samples
 
-Marginal likelihood: -12438.35758179847 sqrt(H/N)=(11.084732655710818)=?=SD=(11.008249475863373) Information: 122.87129804858182
-Max ESS: 6.706301939836118
+Marginal likelihood: -12428.65341414792 sqrt(H/N)=(10.596753616593245)=?=SD=(10.802109255318992) Information: 112.29118721078201
+Max ESS: 17.082043893737673
 
 
-Processing 248 trees from file.
-Log file written to HBVStrict-NS.posterior.trees
+Processing 228 trees from file.
+Log file written to HBVStrict-HBV-NS.posterior.trees
 Done!
 
-Marginal likelihood: -12437.767705819117 sqrt(H/N)=(11.05930077842042)=?=SD=(11.71074051847201) Information: 122.3081337075705
-Max ESS: 6.490414156277384
+Marginal likelihood: -12428.505410641856 sqrt(H/N)=(10.58988064783551)=?=SD=(10.328583134047442) Information: 112.14557213540105
+Max ESS: 17.443137102014155
 
 
 Log file written to HBVStrict-NS.posterior.log
 Done!
 ```
 
-and for the relaxed clock:
+and for the relaxed clock NS analysis:
 
 ```
-Total calculation time: 38.541 seconds
-End likelihood: -200.7794173971489
+Total calculation time: 17.254 seconds
+End likelihood: -198.22029538745582
 Producing posterior samples
 
-Marginal likelihood: -12428.557546706481 sqrt(H/N)=(11.22272275528845)=?=SD=(11.252847709777592) Information: 125.94950604206919
-Max ESS: 5.874085822198268
+Marginal likelihood: -12413.866266847353 sqrt(H/N)=(10.966419757539098)=?=SD=(11.100842819562212) Information: 120.2623622985439
+Max ESS: 13.251755407507508
 
 
-Processing 257 trees from file.
-Log file written to HBVUCLN-NS.posterior.trees
+Processing 246 trees from file.
+Log file written to HBVUCLN-HBV-NS.posterior.trees
 Done!
 
-Marginal likelihood: -12428.480923049345 sqrt(H/N)=(11.220392192278625)=?=SD=(11.491864352217954) Information: 125.89720094854714
-Max ESS: 5.940996269769591
+Marginal likelihood: -12413.74471470421 sqrt(H/N)=(10.959292419373286)=?=SD=(11.010465189987908) Information: 120.10609033333276
+Max ESS: 13.62674380195755
 
 
 Log file written to HBVUCLN-NS.posterior.log
 Done!
 ```
 
-As you can see, nested sampling produces estimates of the marginal likelihood as well as standard deviation estimates. At first sight, the relaxed clock has a log marginal likelihood estimate of about -12428, while the strict clock is much worse at about -12438.  However, the standard deviation of both runs is about 11, so that makes these estimates indistinguishable. Since this is a stochastic process, the exact numbers for your run will differ, but should not be that far appart (less than 2 SDs, or about 22 log points in 95% of the time).
+Nested sampling produces estimates of marginal likelihoods (ML) as well as their standard deviations (SDs). At first sight, the relaxed clock has a (log) ML estimate of about -12414, while the strict clock is much worse at about -12429. However, the standard deviation of both analyses is about 11, making these estimates indistinguishable. Since this is a stochastic process, the exact numbers for your run will differ, but should not be that far apart (typically less than 2 SDs or about 22 log points in 95% of the time).
 
-To get more accurate estimates, the number of particles can be increased. The expected SD is sqrt(H/N) where N is the number of particles and H the information. The information H is conveniently estimated in the nested sampling run as well.
-To aim for an SD of say 2, we need to run again with N particles such that 2=sqrt(125/N), which means 4=125/N, so N=125/4 and N=32 will do. Note that the computation time of nested sampling is linear in the number of particles, so it will take about 32 times longer to run if we change the particleCount from 1 to 32 in the XML.
+To get more accurate ML estimates, the number of particles can be increased. In nested sampling, the SD is approximated by $\sqrt(\frac{H}{N})$, where $N$ is the number of particles and $H$ the measure of information. The latter is conveniently estimated and displayed in the NS analysis output (see above).
 
-A pre-cooked run with 32 particles can be found here: [https://github.com/rbouckaert/NS-tutorial/tree/master/precooked_runs](https://github.com/rbouckaert/NS-tutorial/tree/master/precooked_runs). Download the files [HBV-Strict-NS32.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVStrict-NS32.log) and [HBVUCLN-NS32.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and run the `NSLogAnalyser` application to analyse the results. To start the `NSLogAnalyser` from the command line, use
-```
-applauncher NSLogAnalyser -noposterior -N 32 -log /path/to/HBVStrict-NS32.log
-applauncher NSLogAnalyser -noposterior -N 32 -log /path/to/HBVUCLN-NS32.log
-```
-or from BEAUti, click menu `File/Launch apps`, select `NSLogAnalyser` and fill in the form in the GUI. The output for the strict clock analysis should be something like this:
+We can conveniently calculate the desired number of particles $N$ using the equation above. To aim for an SD of say 2, we need to run the NS analysis again with $N$ particles such that $\sqrt(\frac{H}{N}) = \sqrt(\frac{120}{N}) = 2$, hence $N = \frac{120}{2^2} = 30$ should be enough. (Note that I used $H = 120$ as estimated by the relaxed clock NS analysis instead of $H = 112$ by the strict clock to have some "safety margin".)
+
+The computation time of nested sampling is linear with the number of particles, so it will take about 30 times longer to run if we change the `particleCount` from 1 to 30 in the XML:
+
+> * Make a copy of the file `HBVStrict-NS.xml`/`HBVUCLN-NS.xml` as `HBVStric-NS30.xml`/`HBVUCLN-NS30.xml`.
+> * Start a text editor and in both copied `*NS30.xml` files, change
+> 
+> ```xml
+> <run id="mcmc" spec="nestedsampling.gss.NS" chainLength="1000000" particleCount="1" subChainLength="5000">
+> ```
+> to
+> ```xml
+> <run id="mcmc" spec="nestedsampling.gss.NS" chainLength="1000000" particleCount="30" subChainLength="5000">
+> ```
+
+To save time, this tutorial provides you pre-cooked NS runs with 30 particles: HBVStrict-NS30.log and HBVUCLN-NS30.log.
+
+## Analyzing the nested sampling results
+
+We will now download the pre-cooked log files [HBVStrict-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVStrict-NS32.log) and [HBVUCLN-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and analyze them using the `NSLogAnalyser` tool that comes with the package:
+
+> __In BEAUti:__
+> 
+> * Open the Package Application Launcher via `File > Launch Apps`.
+> * In the dialog,  select the `Nested Sampling Log Analyser (NS)` app and click `Launch`.
+> * Select the log file for the strict clock analysis (`HBVStrict-NS30.log`), set the output file as `HBVStrict-NS30.out` in the same directory.
+> * Change `N` (number of particles) to `30` as shown in the [Figure 6](#fig:MCMC2NS) below.
+> * Click `OK`, and after some time the output should be directly printed out in the pop-up window.
+> * Repeat the steps above for the relaxed clock analysis (`HBVUCLN-NS30.log`).
+
+
+The output for the strict clock analysis should be something like this:
 
 ```
-Loading HBVStrict-NS32.log, burnin 0%, skipping 0 log lines
+Loading HBVStrict-NS30.log, burnin 0%, skipping 0 log lines
 
 |---------|---------|---------|---------|---------|---------|---------|---------|
-******************************
+*********************************************************************************
 
-Marginal likelihood: -12426.207750474812 sqrt(H/N)=(1.8913059067381148)=?=SD=(1.8374367294317693) Information: 114.46521705159945
-Max ESS: 400.41214209052896
+Marginal likelihood: -12425.109181191325 sqrt(H/N)=(1.9521472137472828)=?=SD=(1.9705746084339777) Information: 114.32636232423839
+Max ESS: 428.12858160613445
 
 Calculating statistics
 
 |---------|---------|---------|---------|---------|---------|---------|---------|
 ********************************************************************************
 
-#Particles = 32
+
+
+Log file written to HBVStrict-NS30.out
+#Particles = 30
 item               mean     stddev   
-posterior          -12512.7 2.988107
-likelihood         -12311.7 2.91633 
-prior              -201.009 1.580207
-treeLikelihood     -12311.7 2.91633 
-TreeHeight         3443.955 134.1921
-kappa              2.679169 0.151243
-popSize            2337.454 290.0407
-CoalescentConstant -163.191 3.090671
-freqParameter.1    0.240033 0.005884
-freqParameter.2    0.267856 0.006814
-freqParameter.3    0.217084 0.006638
-freqParameter.4    0.275027 0.006716
+posterior          -12507.9 3.496242
+likelihood         -12310.7 3.503635
+prior              -197.240 1.536168
+treeLikelihood     -12310.7 3.503635
+Tree.height        3462.917 122.9049
+Tree.treeLength    20743.37 553.0787
+kappa              2.708609 0.153543
+freqParameter.1    0.242749 0.005936
+freqParameter.2    0.265167 0.006415
+freqParameter.3    0.217178 0.0046  
+freqParameter.4    0.274905 0.005577
+popSize            2351.248 299.4825
+CoalescentConstant -163.311 3.099342
 Done!
 ```
 
-So, that gives us a ML estimate of -12426.2 with SD of 1.89, slightly better than the 2 we aimed for, but the information is also a bit lower than we assumed (114 vs 128). Furthermore, there are posterior estimates of all the entries in the trace log. Nested sampling does not only estimate MLs and SDs, but can also provide a sample from the posterior, which can be useful for cases where MCMC has trouble with convergence. But let's not digress too much and get back to model selection.
+This gives us an ML estimate of -12425.1 with an SD of 1.97 for the strict clock model, slightly better than the SD of 2 we aimed for. 
 
-For the relaxed clock analysis, we get something like:
+<!-- Furthermore, there are posterior estimates of all the entries in the trace log. Nested sampling does not only estimate MLs and SDs, but can also provide a sample from the posterior, which can be useful for cases where MCMC has trouble with convergence. But let's not digress too much and get back to model selection. -->
+
+For the relaxed clock analysis, we get:
 
 ```
-Marginal likelihood: -12417.389793288146 sqrt(H/N)=(1.9543337689486355)=?=SD=(1.9614418034828585) Information: 122.2214553744953
+Marginal likelihood: -12445.664084956716 sqrt(H/N)=(2.24153635221014)=?=SD=(2.152335911216865) Information: 150.73455654838628
 ```
-so an ML of -12417.4 with SD of 1.95. Therefor the log BF is -12417.4 - -12426.2 = 8.8, which is more than twice the sum of the SDs, so can be considered reliable evidence in favour of the relaxed clock model. Note that judging from the table at the start of the tutorial, this amounts to overwhelming support for the relaxed clock.
+This gives us an ML of -12445.7 with an SD of 2.24 for the uncorrelated LogNormal relaxed clock model. 
+
+Therefore, the log BF is -12417.4 - -12426.2 = 8.8, which is more than twice the sum of the SDs, so can be considered reliable evidence in favour of the relaxed clock model. 
+
+Note that judging from the table at the start of the tutorial, this amounts to overwhelming support for the relaxed clock.
 
 
 
@@ -304,7 +351,7 @@ to
 # Nested sampling FAQ
 <a name="nested-sampling-faq">  </a>
 
-## The analysis prints out multiple ML estimates with their SDs. Which one to choose?
+## The analysis prints out multiple ML estimates with their SDs. Which one should I choose?
 
 The difference between the estimates is the way they are estimated from the nested sampling run. Since these are estimates that require random sampling, they differ from one estimate to another. When the standard deviation is small, the estimates will be very close, but when the standard deviations is quite large, the ML estimates can substantially differ. Regardless, any of the reported estimates are valid estimates, but make sure to report them with their standard deviation.
 
