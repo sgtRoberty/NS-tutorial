@@ -20,7 +20,7 @@ Say, we have two models, $M_1$ and $M_2$, and estimates of their (log) marginal 
 <figure>
 	<a name="fig:bfs"></a>
 	<img style="width:80.0%;" src="figures/BFs.png" alt="">
-	<figcaption>Figure 1: Bayes' factor support in favour of \(M_1\) against \(M_2\).</figcaption>
+	<figcaption>Figure 1: Bayes' factor support in favour of \(M_1\) over \(M_2\).</figcaption>
 </figure>
 
 Note that BFs are sometimes multiplied by a factor of 2, so beware of which definition was used when comparing BFs from different publications.
@@ -255,7 +255,7 @@ To save time, this tutorial provides you pre-cooked NS runs using 30 particles: 
 
 ## Analyzing the nested sampling results
 
-We will now download the pre-cooked log files [HBVStrict-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVStrict-NS32.log) and [HBVUCLN-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and analyze them using the `NSLogAnalyser` tool that comes with the NS package:
+We will now download the pre-cooked log files [HBVStrict-NS30.log](https://raw.githubusercontent.com/sgtRoberty/NS-tutorial/refs/heads/main/precooked_runs/HBVStrict-NS30.log) and [HBVUCLN-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and analyze them using the `NSLogAnalyser` tool that comes with the NS package:
 
 > __In BEAUti:__
 > 
@@ -355,25 +355,23 @@ to
 
 ## The analysis prints out multiple ML estimates with their SDs. Which one should I choose?
 
-The difference between the estimates is the way they are estimated from the nested sampling run. Since these are estimates that require random sampling, they differ from one estimate to another. When the standard deviation is small, the estimates will be very close, but when the standard deviations is quite large, the ML estimates can substantially differ. Regardless, any of the reported estimates are valid estimates, but make sure to report them with their standard deviation.
+The difference between the estimates is due to the ways they are estimated from the nested sampling run. Since these are estimates that require random sampling, they differ from one estimate to another. When the standard deviation is small, the estimates will be very close, but when the standard deviations is quite large, the ML estimates can substantially differ. Regardless, any of the reported estimates are valid estimates, but make sure to report them with their standard deviation.
 
 
 ## How do I know the sub-chain length is large enough?
 
-NS works in theory if and only if the points generated at each iteration are independent. If you already did an MCMC run and know the effective sample size (ESS) for each parameter, to be sure every parameter in every sample is independent you can take the length of the MCMC run divided by the smallest ESS as sub-chain length. This tend to result in quite large sub-chain lengths.
+NS works in theory if and only if the points generated at each iteration are independent. If you already did an MCMC run and know the effective sample size (ESS) for each parameter, to be sure every parameter in every sample is independent you can take the length of the MCMC run divided by the smallest ESS as the sub-chain length. This tends to result in quite large sub-chain lengths.
 
-In practice, we can get away much smaller sub-chain lengths, which you can verify by running multiple NS analysis with increasing sub-chain lengths. If the ML and SD estimates do not substantially differ, you know the shorter sub-chain length was sufficient.
+In practice, we can get away much shorter sub-chain lengths, which you can verify by running multiple NS analyses with increasing sub-chain lengths. If the ML and SD estimates do not substantially differ, shorter sub-chain length will be sufficient.
 
 
 ## How many particles do I need?
 
-To start, use only a few particles. This should give you a sense of the information `H`, which is one of the estimates provided by the NS analysis. If you want to compare two hypotheses, you want the difference between `ML1` and `ML2` to be at least `2*sqrt(SD1*SD1+SD2*SD2)` in order to make sure the difference is not due to randomisation.
+To start, use only a few particles to get a sense of the information $H$, which is estimated in the NS analysis. If you want to compare two models, the difference between their marginal likelihood estimates, $Z_1$ and $Z_2$, needs to be at least $2 \times \sqrt{{SD_1}^2 + {SD_2}^2}$ to make sure the difference is not due to randomization.
 
-If the difference is larger, you do not need more particles.
+If the difference is larger, you do not need more particles. If the difference is smaller, you can estimate how much the SD estimates must shrink to get a difference that is sufficiently large. Since $SD = \sqrt(\frac{H}{N})$, we have $N = \frac{H}{SD^2}$, where $H$ comes from the NS analysis with a few particles. Next, you can run the analysis again with the increased number of particles $N$ and see if the difference becomes large enough.
 
-If the difference is smaller, you can guess how much the SD estimates must shrink to get a difference that is sufficiently large. Since the `SD=sqrt(H/N)`, we have that `N=H/(SD*SD)` and `H` comes from the NS run with a few particles. Run the analysis again, with the increased number of particles, and see if the difference becomes large enough.
-
-If the difference is less than 2, the hypotheses may not be distinguishable -- in terms of Bayes factors, are barely worth mentioning.
+If the difference between marginal likelihood estimates is less than 2, the hypotheses may not be distinguishable -- in terms of Bayes' factors, the difference is barely worth mentioning.
 
 
 ## Is NS faster than path sampling/stepping stone (PS/SS)?
@@ -384,7 +382,7 @@ The parallel implementation makes it possible to run many particles in parallel,
 
 ## The output is written on screen, which I forgot to save. Can I estimate them directly from the log files?
 
-The NS package has a `NSLogAnalyser` application that you can run via the menu `File/Launch apps` in BEAUti -- a window pops up where you select the `NSLogAnalyser`, and a dialog shows you various options to fill in. You can also run it from the command line on OS X or Linux using
+The NS package has a `NSLogAnalyser` application that you can run via the menu `File > Launch Apps` in BEAUti -- a window pops up where you select the `NSLogAnalyser`, and a dialog shows you various options to fill in. You can also run it from the command line on OS X or Linux using
 
 ```
 /path/to/beast/bin/applauncher NSLogAnalyser -N 1 -log  xyz.log
