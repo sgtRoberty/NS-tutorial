@@ -30,12 +30,12 @@ Note that BFs are sometimes multiplied by a factor of 2, so beware of which defi
 
 * Randomly sample `N` points (also called particles) from the prior distribution
 * While (marginal) likelihood estimates have not converged
-	* Pick the point with the lowest likelihood $L_{min}$ and save it to the log file
-	* Replace the point with a new one sampled from the prior via an MCMC chain of `subChainLength` steps, **under the condition that the new likelihood is at least $L_{min}$**
+	* Pick the point with the lowest likelihood {% eqinline L_{min} %} and save it to the log file
+	* Replace the point with a new one sampled from the prior via an MCMC chain of `subChainLength` steps, **under the condition that the new likelihood is at least {% eqinline L_{min} %}**
 
 The main parameters of the NS algorithm are the number of particles (`N`) and the length of the MCMC chain to sample a replacement particle (`subChainLength`). To determine `N`, we first start the NS analysis with `N=1`. Based on the results of that analysis, we can determine a target standard deviation for marginal likelihood estimates and calculate the required `N` value using the estimated information measure `H` and a given formula (more details will follow later in the tutorail).
 
-The `subChainLength` determines how independent the replacement point is from the $L_{min}$ point that was saved and is a parameter that needs to be determined by trial and error (see [FAQ](#nested-sampling-faq) for details).
+The `subChainLength` determines how independent the replacement point is from the {% eqinline L_{min} %} point that was saved and is a parameter that needs to be determined by trial and error (see [FAQ](#nested-sampling-faq) for details).
 
 
 ----
@@ -234,9 +234,9 @@ Done!
 
 Nested sampling produces estimates of marginal likelihoods (ML) as well as their standard deviations (SDs). At first sight, the relaxed clock has a (log) ML estimate of about -12414, while the strict clock is much worse at about -12429. However, the standard deviation of both analyses is about 11, making these estimates indistinguishable. Since this is a stochastic process, the exact numbers for your run will differ, but should not be that far apart (typically less than 2 SDs or about 22 log points in 95% of the time).
 
-To get more accurate ML estimates, the number of particles can be increased. In nested sampling, the SD is approximated by  {% eqinline \sqrt(\frac{H}{N}) %}, where {% eqinline N %} is the number of particles and  {% eqinline H %} the measure of information. The latter is conveniently estimated and displayed in the NS analysis output (see above).
+To get more accurate ML estimates, the number of particles can be increased. In nested sampling, the SD is approximated by  {% eqinline \sqrt{ \frac{H}{N} } %}, where {% eqinline N %} is the number of particles and  {% eqinline H %} the measure of information. The latter is conveniently estimated and displayed in the NS analysis output (see above).
 
-We can conveniently calculate the desired number of particles  {% eqinline N %} using the equation above. To aim for an SD of say 2, we need to run the NS analysis again with {% eqinline N %} particles such that  {% eqinline \sqrt(\frac{H}{N}) = \sqrt(\frac{120}{N}) = 2 %}, hence  {% eqinline N = \frac{120}{2^2} = 30 %} should be enough. (Note that I used  {% eqinline H = 120 %} as estimated by the relaxed clock NS analysis instead of  {% eqinline H = 112 %} by the strict clock to have some "safety margin".)
+We can conveniently calculate the desired number of particles  {% eqinline N %} using the equation above. To aim for an SD of say 2, we need to run the NS analysis again with {% eqinline N %} particles such that  {% eqinline \sqrt{ \frac{H}{N} } = \sqrt{ \frac{120}{N} } = 2 %}, hence  {% eqinline N = \frac{120}{2^2} = 30 %} should be enough. (Note that I used  {% eqinline H = 120 %} as estimated by the relaxed clock NS analysis instead of  {% eqinline H = 112 %} by the strict clock to have some "safety margin".)
 
 The computation time of nested sampling is linear with the number of particles, so it will take about 30 times longer to run if we change the `particleCount` from 1 to 30 in the XML:
 
@@ -367,9 +367,9 @@ In practice, we can get away much shorter sub-chain lengths, which you can verif
 
 ## How many particles do I need?
 
-To start, use only a few particles to get a sense of the information $H$, which is estimated in the NS analysis. If you want to compare two models, the difference between their marginal likelihood estimates, $Z_1$ and $Z_2$, needs to be at least {% eqinline 2 \times \sqrt{ {SD_1}^2 + {SD_2}^2} %} to make sure the difference is not due to randomization.
+To start, use only a few particles to get a sense of the information {% eqinline H %}, which is estimated in the NS analysis. If you want to compare two models, the difference between their marginal likelihood estimates, {% eqinline Z_1 %} and {% eqinline Z_2 %], needs to be at least {% eqinline 2 \times \sqrt{ {SD_1}^2 + {SD_2}^2} %} to make sure the difference is not due to randomization.
 
-If the difference is larger, you do not need more particles. If the difference is smaller, you can estimate how much the SD estimates must shrink to get a difference that is sufficiently large. Since $SD = \sqrt(\frac{H}{N})$, we have $N = \frac{H}{SD^2}$, where $H$ comes from the NS analysis with a few particles. Next, you can run the analysis again with the increased number of particles $N$ and see if the difference becomes large enough.
+If the difference is larger, you do not need more particles. If the difference is smaller, you can estimate how much the SD estimates must shrink to get a difference that is sufficiently large. Since {% eqinline SD = \sqrt{ \frac{H}{N} } %}, we have {% eqinline N = \frac{H}{SD^2} %}, where {% eqinline H %} comes from the NS analysis with a few particles. Next, you can run the analysis again with the increased number of particles {% eqinline N %} and see if the difference becomes large enough.
 
 If the difference between marginal likelihood estimates is less than 2, the hypotheses may not be distinguishable -- in terms of Bayes' factors, the difference is barely worth mentioning.
 
