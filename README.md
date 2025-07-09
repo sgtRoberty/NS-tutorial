@@ -367,7 +367,7 @@ In practice, we can get away much shorter sub-chain lengths, which you can verif
 
 ## How many particles do I need?
 
-To start, use only a few particles to get a sense of the information {% eqinline H %}, which is estimated in the NS analysis. If you want to compare two models, the difference between their marginal likelihood estimates, {% eqinline Z_1 %} and {% eqinline Z_2 %], needs to be at least {% eqinline 2 \times \sqrt{ {SD_1}^2 + {SD_2}^2} %} to make sure the difference is not due to randomization.
+To start, use only a few particles to get a sense of the information {% eqinline H %}, which is estimated in the NS analysis. If you want to compare two models, the difference between their marginal likelihood estimates, {% eqinline Z_1 %} and {% eqinline Z_2 %}, needs to be at least {% eqinline 2 \times \sqrt{ {SD_1}^2 + {SD_2}^2} %} to make sure the difference is not due to randomization.
 
 If the difference is larger, you do not need more particles. If the difference is smaller, you can estimate how much the SD estimates must shrink to get a difference that is sufficiently large. Since {% eqinline SD = \sqrt{ \frac{H}{N} } %}, we have {% eqinline N = \frac{H}{SD^2} %}, where {% eqinline H %} comes from the NS analysis with a few particles. Next, you can run the analysis again with the increased number of particles {% eqinline N %} and see if the difference becomes large enough.
 
