@@ -15,7 +15,7 @@ BEAST provides a bewildering number of models. Bayesians have two techniques to 
 
 Bayesian model selection is based on estimating the marginal likelihood: the term forming the denominator in Bayes' formula. This is generally a computationally intensive task and  there are several ways to estimate them. Here, we concentrate on nested sampling as a way to estimate the marginal likelihood as well as the uncertainty in that estimate.
 
-Say, we have two models, $M_1$ and $M_2$, and estimates of their (log) marginal likelihoods, $Z_1$ and $Z_2$. We can calculate the Bayes' factor (BF), which is the fraction $BF = Z_1/Z_2$ (or the difference $\log(BF) = \log(Z_1) - \log(Z_2)$ in log space). Typically, if $\log(BF)$ is greater than 1, $M_1$ is favoured, otherwise $M_1$ and $M2$ are hardly distinguishable or $M_2$ is favoured. How much $M_1$ is favoured over $M_2$ can be found in the following table {% cite kass1995bayes --file NS-tutorial/master-refs %}:
+Say, we have two models,  {% eqinline M_1 %} and  {% eqinline M_2 %}, and estimates of their (log) marginal likelihoods,  {% eqinline Z_1 %} and {% eqinline Z_2 %}. We can calculate the Bayes' factor (BF), which is the fraction {% eqinline BF = Z_1/Z_2 %} (or the difference {% eqinline \log(BF) = \log(Z_1) - \log(Z_2) %} in log space). Typically, if {% eqinline \log(BF) %} is greater than 1, {% eqinline M_1 %} is favoured, otherwise  {% eqinline M_1 %} and  {% eqinline M2 %} are hardly distinguishable or  {% eqinlineM_2 %} is favoured. How much  {% eqinline M_1 %} is favoured over  {% eqinline M_2 %} can be found in the following table {% cite kass1995bayes --file NS-tutorial/master-refs %}:
 
 <figure>
 	<a name="fig:bfs"></a>
@@ -234,9 +234,9 @@ Done!
 
 Nested sampling produces estimates of marginal likelihoods (ML) as well as their standard deviations (SDs). At first sight, the relaxed clock has a (log) ML estimate of about -12414, while the strict clock is much worse at about -12429. However, the standard deviation of both analyses is about 11, making these estimates indistinguishable. Since this is a stochastic process, the exact numbers for your run will differ, but should not be that far apart (typically less than 2 SDs or about 22 log points in 95% of the time).
 
-To get more accurate ML estimates, the number of particles can be increased. In nested sampling, the SD is approximated by $\sqrt(\frac{H}{N})$, where $N$ is the number of particles and $H$ the measure of information. The latter is conveniently estimated and displayed in the NS analysis output (see above).
+To get more accurate ML estimates, the number of particles can be increased. In nested sampling, the SD is approximated by  {% eqinline \sqrt(\frac{H}{N}) %}, where {% eqinline N %} is the number of particles and  {% eqinline H %} the measure of information. The latter is conveniently estimated and displayed in the NS analysis output (see above).
 
-We can conveniently calculate the desired number of particles $N$ using the equation above. To aim for an SD of say 2, we need to run the NS analysis again with $N$ particles such that $\sqrt(\frac{H}{N}) = \sqrt(\frac{120}{N}) = 2$, hence $N = \frac{120}{2^2} = 30$ should be enough. (Note that I used $H = 120$ as estimated by the relaxed clock NS analysis instead of $H = 112$ by the strict clock to have some "safety margin".)
+We can conveniently calculate the desired number of particles  {% eqinline N %} using the equation above. To aim for an SD of say 2, we need to run the NS analysis again with {% eqinline N %} particles such that  {% eqinline \sqrt(\frac{H}{N}) = \sqrt(\frac{120}{N}) = 2 %}, hence  {% eqinline N = \frac{120}{2^2} = 30 %} should be enough. (Note that I used  {% eqinline H = 120 %} as estimated by the relaxed clock NS analysis instead of  {% eqinline H = 112 %} by the strict clock to have some "safety margin".)
 
 The computation time of nested sampling is linear with the number of particles, so it will take about 30 times longer to run if we change the `particleCount` from 1 to 30 in the XML:
 
@@ -319,7 +319,7 @@ Marginal likelihood: -12417.941209427103 sqrt(H/N)=(2.037101812671995)=?=SD=(2.0
 ```
 This gives us an ML of -12417.9 with an SD of 2.04 for the uncorrelated log-normal relaxed clock model. 
 
-Therefore, the $\log{BF}$ of the relaxed clock _versus_ the stric clock is $-12417.9 - (-12426.4) = 8.5$, which is more than twice the sum of the SDs ($1.95 + 2.04 = 3.99$), which can be considered as reliable evidence in favour of the log-normal relaxed clock model over the strict clock. Note that judging from [Figure 1](#fig:bfs), this amounts to overwhelming support for the relaxed clock.
+Therefore, the {% eqinline  \log{BF} %} of the relaxed clock _versus_ the stric clock is  {% eqinline  -12417.9 - (-12426.4) = 8.5 %}, which is more than twice the sum of the SDs ({% eqinline 1.95 + 2.04 = 3.99 %}), which can be considered as reliable evidence in favour of the log-normal relaxed clock model over the strict clock. Note that judging from [Figure 1](#fig:bfs), this amounts to overwhelming support for the relaxed clock.
 
 
 
