@@ -251,23 +251,30 @@ The computation time of nested sampling is linear with the number of particles, 
 > <run id="mcmc" spec="nestedsampling.gss.NS" chainLength="1000000" particleCount="30" subChainLength="5000">
 > ```
 
-To save time, this tutorial provides you pre-cooked NS runs with 30 particles: HBVStrict-NS30.log and HBVUCLN-NS30.log.
+To save time, this tutorial provides you pre-cooked NS runs using 30 particles: HBVStrict-NS30.log and HBVUCLN-NS30.log.
 
 ## Analyzing the nested sampling results
 
-We will now download the pre-cooked log files [HBVStrict-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVStrict-NS32.log) and [HBVUCLN-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and analyze them using the `NSLogAnalyser` tool that comes with the package:
+We will now download the pre-cooked log files [HBVStrict-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVStrict-NS32.log) and [HBVUCLN-NS30.log](https://raw.githubusercontent.com/rbouckaert/NS-tutorial/master/precooked_runs/HBVUCLN-NS32.log) and analyze them using the `NSLogAnalyser` tool that comes with the NS package:
 
 > __In BEAUti:__
 > 
 > * Open the Package Application Launcher via `File > Launch Apps`.
 > * In the dialog,  select the `Nested Sampling Log Analyser (NS)` app and click `Launch`.
 > * Select the log file for the strict clock analysis (`HBVStrict-NS30.log`), set the output file as `HBVStrict-NS30.out` in the same directory.
-> * Change `N` (number of particles) to `30` as shown in the [Figure 6](#fig:MCMC2NS) below.
+> * Change `N` (number of particles) to `30` as shown in the [Figure 7](#fig:nsloganalyser) below.
 > * Click `OK`, and after some time the output should be directly printed out in the pop-up window.
 > * Repeat the steps above for the relaxed clock analysis (`HBVUCLN-NS30.log`).
 
 
-The output for the strict clock analysis should be something like this:
+<figure>
+	<a name="fig:nsloganalyser"></a>
+	<img style="width:80.0%;" src="figures/loganalyser.png" alt="">
+	<figcaption>Figure 7: Analyzing the log file of a 30-particle NS analysis using the Nested Sampling Log Analyser</figcaption>
+</figure>
+<br>
+
+The output for the strict clock NS analysis should look like this:
 
 ```
 Loading HBVStrict-NS30.log, burnin 0%, skipping 0 log lines
@@ -275,49 +282,44 @@ Loading HBVStrict-NS30.log, burnin 0%, skipping 0 log lines
 |---------|---------|---------|---------|---------|---------|---------|---------|
 *********************************************************************************
 
-Marginal likelihood: -12425.109181191325 sqrt(H/N)=(1.9521472137472828)=?=SD=(1.9705746084339777) Information: 114.32636232423839
-Max ESS: 428.12858160613445
+Marginal likelihood: -12426.424659219112 sqrt(H/N)=(1.9487197469883364)=?=SD=(1.8689265005123525) Information: 113.92525956906857
+Max ESS: 415.691078202295
 
 Calculating statistics
 
 |---------|---------|---------|---------|---------|---------|---------|---------|
 ********************************************************************************
 
-
-
-Log file written to HBVStrict-NS30.out
 #Particles = 30
 item               mean     stddev   
-posterior          -12507.9 3.496242
-likelihood         -12310.7 3.503635
-prior              -197.240 1.536168
-treeLikelihood     -12310.7 3.503635
-Tree.height        3462.917 122.9049
-Tree.treeLength    20743.37 553.0787
-kappa              2.708609 0.153543
-freqParameter.1    0.242749 0.005936
-freqParameter.2    0.265167 0.006415
-freqParameter.3    0.217178 0.0046  
-freqParameter.4    0.274905 0.005577
-popSize            2351.248 299.4825
-CoalescentConstant -163.311 3.099342
+posterior          -12509.4 3.380924
+likelihood         -12312.4 3.312481
+prior              -196.985 1.44903 
+treeLikelihood     -12312.4 3.312481
+Tree.height        3470.464 130.0832
+Tree.treeLength    20696.58 559.9497
+kappa              2.698771 0.1626  
+freqParameter.1    0.240524 0.006909
+freqParameter.2    0.270687 0.00763 
+freqParameter.3    0.219939 0.006023
+freqParameter.4    0.268849 0.007123
+popSize            2325.738 298.5557
+CoalescentConstant -163.330 2.961035
 Done!
 ```
 
-This gives us an ML estimate of -12425.1 with an SD of 1.97 for the strict clock model, slightly better than the SD of 2 we aimed for. 
+This gives us an ML estimate of -12426.4 with an SD of 1.95 for the strict clock model, slightly better than the SD of 2 we aimed for. 
 
 <!-- Furthermore, there are posterior estimates of all the entries in the trace log. Nested sampling does not only estimate MLs and SDs, but can also provide a sample from the posterior, which can be useful for cases where MCMC has trouble with convergence. But let's not digress too much and get back to model selection. -->
 
-For the relaxed clock analysis, we get:
+For the relaxed clock NS analysis, we get:
 
 ```
-Marginal likelihood: -12445.664084956716 sqrt(H/N)=(2.24153635221014)=?=SD=(2.152335911216865) Information: 150.73455654838628
+Marginal likelihood: -12417.941209427103 sqrt(H/N)=(2.037101812671995)=?=SD=(2.0736988078248095) Information: 124.49351385574582
 ```
-This gives us an ML of -12445.7 with an SD of 2.24 for the uncorrelated LogNormal relaxed clock model. 
+This gives us an ML of -12417.9 with an SD of 2.04 for the uncorrelated log-normal relaxed clock model. 
 
-Therefore, the log BF is -12417.4 - -12426.2 = 8.8, which is more than twice the sum of the SDs, so can be considered reliable evidence in favour of the relaxed clock model. 
-
-Note that judging from the table at the start of the tutorial, this amounts to overwhelming support for the relaxed clock.
+Therefore, the $\log{BF}$ of the relaxed clock _versus_ the stric clock is $-12417.9 - (-12426.4) = 8.5$, which is more than twice the sum of the SDs ($1.95 + 2.04 = 3.99$), which can be considered as reliable evidence in favour of the log-normal relaxed clock model over the strict clock. Note that judging from [Figure 1](#fig:bfs), this amounts to overwhelming support for the relaxed clock.
 
 
 
