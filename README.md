@@ -33,7 +33,7 @@ Note that BFs are sometimes multiplied by a factor of 2, so beware of which defi
 	* Pick the point with the lowest likelihood {% eqinline L_{min} %} and save it to the log file
 	* Replace the point with a new one sampled from the prior via an MCMC chain of `subChainLength` steps, **under the condition that the new likelihood is at least {% eqinline L_{min} %}**
 
-The main parameters of the NS algorithm are the number of particles (`N`) and the length of the MCMC chain to sample a replacement particle (`subChainLength`). To determine `N`, we first start the NS analysis with `N=1`. Based on the results of that analysis, we can determine a target standard deviation for marginal likelihood estimates and calculate the required `N` value using the estimated information measure `H` and a given formula (more details will follow later in the tutorail).
+The main parameters of the NS algorithm are the number of particles (`N`) and the length of the MCMC chain to sample a replacement particle (`subChainLength`). To determine `N`, we first start the NS analysis with `N=1`. Based on the results of that analysis, we can determine a target standard deviation for marginal likelihood estimates and calculate the required `N` value using the estimated information measure `H` and a given formula (more details will follow later in the tutorial).
 
 The `subChainLength` determines how independent the replacement point is from the {% eqinline L_{min} %} point that was saved and is a parameter that needs to be determined by trial and error (see [FAQ](#nested-sampling-faq) for details).
 
@@ -169,7 +169,7 @@ You can convert an MCMC analysis to an NS analysis using the `MCMC2NS` tool that
 
 Alternatively, you can do the MCMC-to-NS conversion in a text editor as follows:
 
-> * Make a copy of the file `HBVStrict.xml`/`HBVUCLN.xml` as `HBVStric-NS.xml`/`HBVUCLN-NS.xml`.
+> * Make a copy of the file `HBVStrict.xml`/`HBVUCLN.xml` as `HBVStrict-NS.xml`/`HBVUCLN-NS.xml`.
 > * Start a text editor and in both copied `*NS.xml` files, change
 > 
 > ```xml
@@ -319,7 +319,7 @@ Marginal likelihood: -12417.941209427103 sqrt(H/N)=(2.037101812671995)=?=SD=(2.0
 ```
 This gives us an ML of -12417.9 with an SD of 2.04 for the uncorrelated log-normal relaxed clock model. 
 
-Therefore, the {% eqinline  \log{BF} %} of the relaxed clock _versus_ the stric clock is  {% eqinline  -12417.9 - (-12426.4) = 8.5 %}, which is more than twice the sum of the SDs ({% eqinline 1.95 + 2.04 = 3.99 %}), which can be considered as reliable evidence in favour of the log-normal relaxed clock model over the strict clock. Note that judging from [Figure 1](#fig:bfs), this amounts to overwhelming support for the relaxed clock.
+Therefore, the {% eqinline  \log{BF} %} of the relaxed clock _versus_ the strict clock is  {% eqinline  -12417.9 - (-12426.4) = 8.5 %}, which is more than twice the sum of the SDs ({% eqinline 1.95 + 2.04 = 3.99 %}), which can be considered as reliable evidence in favour of the log-normal relaxed clock model over the strict clock. Note that judging from [Figure 1](#fig:bfs), this amounts to overwhelming support for the relaxed clock.
 
 
 
